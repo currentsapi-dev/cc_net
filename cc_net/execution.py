@@ -150,7 +150,7 @@ class MpExecutor(Executor):
         self.log_dir = log_dir
         if task_parallelism < 0:
             task_parallelism = os.cpu_count() or 1
-        self.processes = min(task_parallelism // cpus, os.cpu_count())
+        self.processes = min(task_parallelism // cpus, int(os.cpu_count()*2))
 
     def __call__(self, function: Callable[..., Optional[str]], *args: Iterable):
 

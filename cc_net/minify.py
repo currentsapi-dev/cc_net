@@ -277,19 +277,22 @@ def minify(
 
 
 def unminify_file(file: Union[Path, str], output: Path, cache_dir: Path = None):
-    unminifier = Unminifier(cache_dir)
-    with jsonql.smart_open(file) as f:
-        mini = [m for m in jsonql.read_jsons(f)]
-    unminifier.look_for(mini)
+    try:
+        unminifier = Unminifier(cache_dir)
+        with jsonql.smart_open(file) as f:
+            mini = [m for m in jsonql.read_jsons(f)]
+        unminifier.look_for(mini)
 
-    tmp = output.with_name("tmp." + output.name)
-    jsonql.run_pipes(unminifier, file=iter(mini), output=tmp)
-    shutil.move(tmp, output)
-    f_size = Path(file).stat().st_size if Path(file).exists() else 0
-    o_size = output.stat().st_size
-    mb = 1024 ** 2
-    return f"Unminified {output} ({f_size // mb:_}Mb -> {o_size // mb:_}Mb)"
-
+        tmp = output.with_name("tmp." + output.name)
+        jsonql.run_pipes(unminifier, file=iter(mini), output=tmp)
+        shutil.move(tmp, output)
+        f_size = Path(file).stat().st_size if Path(file).exists() else 0
+        o_size = output.stat().st_size
+        mb = 1024 ** 2
+        return f"Unminified {output} ({f_size // mb:_}Mb -> {o_size // mb:_}Mb)"
+    except OSError as e:
+        error = str(e)
+        return f"{error}"
 
 def unminify(
     files: List[str],
@@ -298,7 +301,10 @@ def unminify(
     parallelism: int = -1,
     cache_dir: Path = None,
 ):
-    """Minify all the files in the given folder."""
+    """
+        Minify all the files in the given folder.
+        offset url shard here if needed
+    """
     if len(files) == 1 and Path(files[0]).is_dir():
         folder = Path(files[0])
         files = [str(f) for f in sorted(folder.glob("*.json.gz"))]
@@ -321,7 +327,7 @@ def unminify(
         timeout_hour=8,
         cpus=1,
         task_parallelism=parallelism,
-        mem_gb=32,
+        mem_gb=24,
     )
     ex(unminify_file, files, outputs, itertools.repeat(cache_dir))
 

@@ -1126,7 +1126,9 @@ def request_get_content(url: str, n_retry: int = 3) -> bytes:
     logging.info(f"Starting download of {url}")
     for i in range(1, n_retry + 1):
         try:
-            r = requests.get(url)
+            headers = requests.utils.default_headers()
+            headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'
+            r = requests.get(url, headers=headers)
             r.raise_for_status()
             break
         except requests.exceptions.RequestException as e:
@@ -1137,6 +1139,9 @@ def request_get_content(url: str, n_retry: int = 3) -> bytes:
             warnings.warn(
                 f"Swallowed error {e} while downloading {url} ({i} out of {n_retry})"
             )
+            time.sleep(10 * 2 ** i)
+        except OSError as e:
+            warnings.warn("retry: OSError in retriving url {}".format(url))
             time.sleep(10 * 2 ** i)
 
     logging.info(f"Downloaded {url} [{r.status_code}]")
